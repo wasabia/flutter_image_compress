@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.0.0
+
+Modify the constraint version of flutter to 2.0.0
+
+## 1.0.0-nullsafety
+
+Migrate null-safety version.
+
 ## 0.7.0
 
 - Fix

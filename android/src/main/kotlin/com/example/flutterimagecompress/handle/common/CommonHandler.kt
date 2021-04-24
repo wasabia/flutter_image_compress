@@ -36,11 +36,11 @@ class CommonHandler(override val type: Int) : FormatHandler {
     val result = compress(byteArray, minWidth, minHeight, quality, rotate, inSampleSize)
 
     if (keepExif && bitmapFormat == Bitmap.CompressFormat.JPEG) {
-      val keeper = ExifKeeper(result)
-      val tmpStream = ByteArrayOutputStream().apply { write(result) }
-      val resultStream = keeper.writeToOutputStream(
+      val byteArrayOutputStream = ByteArrayOutputStream()
+      byteArrayOutputStream.write(result)
+      val resultStream = ExifKeeper(byteArray).writeToOutputStream(
               context,
-              tmpStream
+              byteArrayOutputStream
       )
       outputStream.write(resultStream.toByteArray())
     } else {
@@ -86,29 +86,35 @@ class CommonHandler(override val type: Int) : FormatHandler {
   }
 
 
-  override fun handleFile(context: Context, path: String, outputStream: OutputStream, minWidth: Int, minHeight: Int, quality: Int, rotate: Int, keepExif: Boolean, inSampleSize: Int) {
-    val options = BitmapFactory.Options()
-    options.inJustDecodeBounds = false
-    options.inPreferredConfig = Bitmap.Config.RGB_565
-    options.inSampleSize = inSampleSize
-    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
-      @Suppress("DEPRECATION")
-      options.inDither = true
-    }
-    val bitmap = BitmapFactory.decodeFile(path, options)
+  override fun handleFile(context: Context, path: String, outputStream: OutputStream, minWidth: Int, minHeight: Int, quality: Int, rotate: Int, keepExif: Boolean, inSampleSize: Int,numberOfRetries:Int) {
+    try{
+      if(numberOfRetries <= 0)return;
+      val options = BitmapFactory.Options()
+      options.inJustDecodeBounds = false
+      options.inPreferredConfig = Bitmap.Config.RGB_565
+      options.inSampleSize = inSampleSize
+      if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+        @Suppress("DEPRECATION")
+        options.inDither = true
+      }
+      val bitmap = BitmapFactory.decodeFile(path, options)
 
-    val array = bitmap.compress(minWidth, minHeight, quality, rotate, type)
+      val array = bitmap.compress(minWidth, minHeight, quality, rotate, type)
 
-    if (keepExif && bitmapFormat == Bitmap.CompressFormat.JPEG) {
-      val byteArrayOutputStream = ByteArrayOutputStream()
-      byteArrayOutputStream.write(array)
-      val tmpOutputStream = ExifKeeper(path).writeToOutputStream(
-              context,
-              byteArrayOutputStream
-      )
-      outputStream.write(tmpOutputStream.toByteArray())
-    } else {
-      outputStream.write(array)
+      if (keepExif && bitmapFormat == Bitmap.CompressFormat.JPEG) {
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        byteArrayOutputStream.write(array)
+        val tmpOutputStream = ExifKeeper(path).writeToOutputStream(
+                context,
+                byteArrayOutputStream
+        )
+        outputStream.write(tmpOutputStream.toByteArray())
+      } else {
+        outputStream.write(array)
+      }
+    }catch (e:OutOfMemoryError){//handling out of memory error and increase samples size
+      System.gc();
+      handleFile(context, path, outputStream, minWidth, minHeight, quality, rotate, keepExif, inSampleSize *2,numberOfRetries-1);
     }
   }
 }
