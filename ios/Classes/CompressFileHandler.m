@@ -37,9 +37,9 @@
     [[SDImageCodersManager sharedManager] addCoder:webPCoder];
     
     if(imageType == @"image/webp") {
-    img = [[SDImageWebPCoder sharedCoder] decodedImageWithData:nsdata options:nil];
+      img = [[SDImageWebPCoder sharedCoder] decodedImageWithData:nsdata options:nil];
     } else {
-        img = [UIImage imageWithData:nsdata];
+      img = [UIImage imageWithData:nsdata];
     }
 
 

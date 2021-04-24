@@ -77,6 +77,7 @@
         data = UIImageJPEGRepresentation(image, (CGFloat) quality / 100);
     }
 
+
     return data;
 }
 
